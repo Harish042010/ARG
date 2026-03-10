@@ -1,27 +1,43 @@
-import { useState } from 'react';
-import { getStudents, saveStudents, type Student } from '../../data/adminStore';
+import { useState, useEffect } from 'react';
+import { type Student } from '../../data/adminStore';
 import type { FeeRecord } from '../../types/student.types';
+import { fetchStudents, updateStudent } from '../../services/studentService';
 
 const AdminFees = () => {
-  const [students, setStudents] = useState<Student[]>(getStudents());
-  const [selectedId, setSelectedId] = useState(students[0]?.id ?? '');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState('');
   const [editingFees, setEditingFees] = useState<FeeRecord[] | null>(null);
   const [toast, setToast] = useState('');
   const [showAddFee, setShowAddFee] = useState(false);
   const [newFee, setNewFee] = useState<Partial<FeeRecord>>({ term: '', amount: 0, paid: false, paidOn: null });
 
   const notify = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  useEffect(() => {
+    fetchStudents()
+      .then(data => {
+        setStudents(data);
+        if (data.length > 0) setSelectedId(data[0].id);
+      })
+      .catch(() => notify('❌ Failed to load students'))
+      .finally(() => setLoading(false));
+  }, []);
+
   const student = students.find(s => s.id === selectedId);
 
   const startEdit = () => setEditingFees(JSON.parse(JSON.stringify(student!.fees)));
 
-  const saveFees = () => {
-    if (!editingFees) return;
-    const updated = students.map(s => s.id === selectedId ? { ...s, fees: editingFees } : s);
-    saveStudents(updated);
-    setStudents(updated);
-    setEditingFees(null);
-    notify('✅ Fee records updated');
+  const saveFees = async () => {
+    if (!editingFees || !student) return;
+    try {
+      await updateStudent(selectedId, { fees: editingFees });
+      setStudents(prev => prev.map(s => s.id === selectedId ? { ...s, fees: editingFees } : s));
+      setEditingFees(null);
+      notify('✅ Fee records updated');
+    } catch {
+      notify('❌ Failed to save fees');
+    }
   };
 
   const togglePaid = (idx: number) => {
@@ -33,26 +49,42 @@ const AdminFees = () => {
     });
   };
 
-  const addFeeRecord = () => {
-    if (!newFee.term || !newFee.amount) return;
+  const addFeeRecord = async () => {
+    if (!newFee.term || !newFee.amount || !student) return;
     const fee: FeeRecord = { term: newFee.term!, amount: Number(newFee.amount), paid: newFee.paid ?? false, paidOn: newFee.paid ? new Date().toLocaleDateString('en-IN') : null };
-    const updated = students.map(s => s.id === selectedId ? { ...s, fees: [...s.fees, fee] } : s);
-    saveStudents(updated);
-    setStudents(updated);
-    setShowAddFee(false);
-    setNewFee({ term: '', amount: 0, paid: false, paidOn: null });
-    notify('✅ Fee term added');
+    const updatedFees = [...student.fees, fee];
+    try {
+      await updateStudent(selectedId, { fees: updatedFees });
+      setStudents(prev => prev.map(s => s.id === selectedId ? { ...s, fees: updatedFees } : s));
+      setShowAddFee(false);
+      setNewFee({ term: '', amount: 0, paid: false, paidOn: null });
+      notify('✅ Fee term added');
+    } catch {
+      notify('❌ Failed to add fee');
+    }
   };
 
-  const deleteFee = (termName: string) => {
-    const updated = students.map(s => s.id === selectedId ? { ...s, fees: s.fees.filter(f => f.term !== termName) } : s);
-    saveStudents(updated);
-    setStudents(updated);
-    notify('🗑️ Fee record removed');
+  const deleteFee = async (termName: string) => {
+    if (!student) return;
+    const updatedFees = student.fees.filter(f => f.term !== termName);
+    try {
+      await updateStudent(selectedId, { fees: updatedFees });
+      setStudents(prev => prev.map(s => s.id === selectedId ? { ...s, fees: updatedFees } : s));
+      notify('🗑️ Fee record removed');
+    } catch {
+      notify('❌ Failed to delete fee');
+    }
   };
 
   const totalAmount = student?.fees.reduce((s, f) => s + f.amount, 0) ?? 0;
   const paidAmount = student?.fees.filter(f => f.paid).reduce((s, f) => s + f.amount, 0) ?? 0;
+
+  if (loading) return (
+    <div className="text-center py-16 text-gray-400">
+      <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-900 rounded-full animate-spin mx-auto mb-3" />
+      Loading students…
+    </div>
+  );
 
   return (
     <div className="space-y-6">

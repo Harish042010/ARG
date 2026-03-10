@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { demoAccounts } from '../../data/demoAccounts';
+import { parentLogin } from '../../services/authService';
 
 const ParentLogin = () => {
   const [mobile, setMobile] = useState('');
@@ -9,25 +9,20 @@ const ParentLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    setTimeout(() => {
-      const account = demoAccounts.find(
-        (a) => a.mobile === mobile.trim() && a.password === password
-      );
-
-      if (account) {
-        // Store session in sessionStorage
-        sessionStorage.setItem('parentSession', JSON.stringify(account));
-        navigate('/parent-dashboard');
-      } else {
-        setError('Invalid mobile number or password. Please try again.');
-      }
+    try {
+      const session = await parentLogin(mobile.trim(), password);
+      sessionStorage.setItem('parentToken', session.token);
+      sessionStorage.setItem('parentSession', JSON.stringify(session));
+      navigate('/parent-dashboard');
+    } catch {
+      setError('Invalid mobile number or password. Please try again.');
+    } finally {
       setLoading(false);
-    }, 800); // simulate network delay
+    }
   };
 
   return (

@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { getStudents, saveStudents, type Student } from '../../data/adminStore';
+import { useState, useEffect } from 'react';
+import { type Student } from '../../data/adminStore';
 import type { SubjectMark } from '../../types/student.types';
+import { fetchStudents, updateStudent } from '../../services/studentService';
 
 const AdminMarks = () => {
-  const [students, setStudents] = useState<Student[]>(getStudents());
-  const [selectedId, setSelectedId] = useState(students[0]?.id ?? '');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState('');
   const [editingExamIdx, setEditingExamIdx] = useState<number | null>(null);
   const [editingMarks, setEditingMarks] = useState<SubjectMark[]>([]);
   const [toast, setToast] = useState('');
 
   const notify = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  useEffect(() => {
+    fetchStudents()
+      .then(data => {
+        setStudents(data);
+        if (data.length > 0) setSelectedId(data[0].id);
+      })
+      .catch(() => notify('❌ Failed to load students'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const student = students.find(s => s.id === selectedId);
 
@@ -18,20 +30,24 @@ const AdminMarks = () => {
     setEditingMarks(JSON.parse(JSON.stringify(student!.results[examIdx].marks)));
   };
 
-  const saveMark = () => {
+  const saveMark = async () => {
     if (editingExamIdx === null || !student) return;
     const total = editingMarks.reduce((s, m) => s + m.total, 0);
     const percentage = Math.round((total / (editingMarks.length * 100)) * 1000) / 10;
-    const updated = students.map(s => {
-      if (s.id !== selectedId) return s;
-      const results = [...s.results];
-      results[editingExamIdx] = { ...results[editingExamIdx], marks: editingMarks, percentage };
-      return { ...s, results };
-    });
-    saveStudents(updated);
-    setStudents(updated);
-    setEditingExamIdx(null);
-    notify('✅ Marks updated successfully');
+
+    const updatedResults = student.results.map((r, i) =>
+      i === editingExamIdx ? { ...r, marks: editingMarks, percentage } : r
+    );
+    const updatedStudent = { ...student, results: updatedResults };
+
+    try {
+      await updateStudent(selectedId, { results: updatedResults });
+      setStudents(prev => prev.map(s => s.id === selectedId ? updatedStudent : s));
+      setEditingExamIdx(null);
+      notify('✅ Marks updated successfully');
+    } catch {
+      notify('❌ Failed to save marks');
+    }
   };
 
   const gradeFor = (total: number) => {
@@ -49,6 +65,13 @@ const AdminMarks = () => {
       return next;
     });
   };
+
+  if (loading) return (
+    <div className="text-center py-16 text-gray-400">
+      <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-900 rounded-full animate-spin mx-auto mb-3" />
+      Loading students…
+    </div>
+  );
 
   return (
     <div className="space-y-6">

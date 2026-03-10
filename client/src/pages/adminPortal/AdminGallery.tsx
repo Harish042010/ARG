@@ -1,5 +1,11 @@
-import { useState, useRef } from 'react';
-import { getGallery, saveGallery, generateId, type GalleryImage } from '../../data/adminStore';
+import { useState, useRef, useEffect } from 'react';
+import { type GalleryImage } from '../../data/adminStore';
+import {
+  fetchGallery,
+  createGalleryItem,
+  updateGalleryItem,
+  deleteGalleryItem,
+} from '../../services/galleryService';
 
 const categoryOptions = ['sports', 'cultural', 'academic', 'general'] as const;
 const categoryLabels: Record<string, string> = { sports: '🏆 Sports', cultural: '🎭 Cultural', academic: '📚 Academic', general: '📷 General' };
@@ -7,7 +13,8 @@ const categoryLabels: Record<string, string> = { sports: '🏆 Sports', cultural
 const emptyForm = (): Partial<GalleryImage> => ({ title: '', category: 'general', url: '', uploadedAt: new Date().toISOString().split('T')[0], pdfUrl: '' });
 
 const AdminGallery = () => {
-  const [items, setItems] = useState<GalleryImage[]>(getGallery());
+  const [items, setItems] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Partial<GalleryImage>>(emptyForm());
   const [isEditMode, setIsEditMode] = useState(false);
@@ -18,6 +25,13 @@ const AdminGallery = () => {
   const openNew = () => { setEditing(emptyForm()); setIsEditMode(false); setShowForm(true); };
   const openEdit = (g: GalleryImage) => { setEditing({ ...g }); setIsEditMode(true); setShowForm(true); };
 
+  useEffect(() => {
+    fetchGallery()
+      .then(setItems)
+      .catch(() => notify('❌ Failed to load gallery'))
+      .finally(() => setLoading(false));
+  }, []);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -26,27 +40,34 @@ const AdminGallery = () => {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!editing.title || !editing.url) return;
-    let updated: GalleryImage[];
-    if (isEditMode) {
-      updated = items.map(g => g.id === editing.id ? (editing as GalleryImage) : g);
-      notify('✅ Image updated');
-    } else {
-      updated = [{ ...(editing as GalleryImage), id: generateId() }, ...items];
-      notify('✅ Image added to gallery');
+    try {
+      if (isEditMode && editing.id) {
+        const updated = await updateGalleryItem(editing.id, editing);
+        setItems(prev => prev.map(g => g.id === editing.id ? updated : g));
+        notify('✅ Image updated');
+      } else {
+        const { id: _id, ...data } = editing as GalleryImage;
+        const created = await createGalleryItem(data);
+        setItems(prev => [created, ...prev]);
+        notify('✅ Image added to gallery');
+      }
+      setShowForm(false);
+    } catch (err: unknown) {
+      notify(`❌ ${err instanceof Error ? err.message : 'Save failed'}`);
     }
-    saveGallery(updated);
-    setItems(updated);
-    setShowForm(false);
   };
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm('Remove this image from the gallery?')) return;
-    const updated = items.filter(g => g.id !== id);
-    saveGallery(updated);
-    setItems(updated);
-    notify('🗑️ Image removed');
+    try {
+      await deleteGalleryItem(id);
+      setItems(prev => prev.filter(g => g.id !== id));
+      notify('🗑️ Image removed');
+    } catch {
+      notify('❌ Delete failed');
+    }
   };
 
   return (
@@ -86,29 +107,19 @@ const AdminGallery = () => {
                   <input type="date" value={editing.uploadedAt ?? ''} onChange={e => setEditing(p => ({ ...p, uploadedAt: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none" />
                 </div>
               </div>
-
-              {/* File Upload */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Upload Local Image</label>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-                <button onClick={() => fileRef.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors text-center">
-                  📁 Click to select image…
-                </button>
+                <button onClick={() => fileRef.current?.click()} className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors text-center">📁 Click to select image…</button>
               </div>
-
-              {/* OR image URL */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Or Paste Image URL *</label>
                 <input type="url" value={editing.url?.startsWith('data:') ? '' : (editing.url ?? '')} onChange={e => setEditing(p => ({ ...p, url: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="https://example.com/image.jpg" />
               </div>
-
-              {/* PDF URL */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Event Details PDF URL (Optional)</label>
                 <input type="url" value={editing.pdfUrl ?? ''} onChange={e => setEditing(p => ({ ...p, pdfUrl: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none" placeholder="https://example.com/details.pdf" />
               </div>
-
-              {/* Preview */}
               {editing.url && (
                 <div className="relative h-40 rounded-xl overflow-hidden bg-gray-100">
                   <img src={editing.url} alt="Preview" className="w-full h-full object-cover" />
@@ -126,26 +137,33 @@ const AdminGallery = () => {
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map(g => (
-          <div key={g.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 group hover:shadow-md transition-shadow">
-            <div className="relative h-36 bg-gray-100">
-              <img src={g.url} alt={g.title} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23dbeafe" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%233b82f6" font-size="30">🖼️</text></svg>'; }} />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                <button onClick={() => openEdit(g)} className="bg-white text-blue-900 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-50">Edit</button>
-                <button onClick={() => remove(g.id)} className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600">Delete</button>
+      {loading ? (
+        <div className="text-center py-16 text-gray-400">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-900 rounded-full animate-spin mx-auto mb-3" />
+          Loading gallery…
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {items.map(g => (
+            <div key={g.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 group hover:shadow-md transition-shadow">
+              <div className="relative h-36 bg-gray-100">
+                <img src={g.url} alt={g.title} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23dbeafe" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%233b82f6" font-size="30">🖼️</text></svg>'; }} />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                  <button onClick={() => openEdit(g)} className="bg-white text-blue-900 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-50">Edit</button>
+                  <button onClick={() => remove(g.id)} className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-600">Delete</button>
+                </div>
+              </div>
+              <div className="p-2.5 flex justify-between items-start">
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-blue-950 truncate">{g.title}</p>
+                  <p className="text-[10px] text-gray-400">{categoryLabels[g.category]} · {g.uploadedAt}</p>
+                </div>
+                {g.pdfUrl && <span className="text-xs shrink-0 ml-1" title="Has PDF attached">📄</span>}
               </div>
             </div>
-            <div className="p-2.5 flex justify-between items-start">
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold text-blue-950 truncate">{g.title}</p>
-                <p className="text-[10px] text-gray-400">{categoryLabels[g.category]} · {g.uploadedAt}</p>
-              </div>
-              {g.pdfUrl && <span className="text-xs shrink-0 ml-1" title="Has PDF attached">📄</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

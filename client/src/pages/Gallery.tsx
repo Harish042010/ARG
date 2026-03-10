@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getGallery, type GalleryImage } from '../data/adminStore';
+import { type GalleryImage } from '../data/adminStore';
+import { fetchGallery } from '../services/galleryService';
 
 const categoryLabels: Record<string, string> = {
   sports: '🏆 Sports',
@@ -11,12 +12,13 @@ const categoryLabels: Record<string, string> = {
 
 const Gallery = () => {
   const navigate = useNavigate();
-  const all = getGallery();
+  const [all, setAll] = useState<GalleryImage[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [lightbox, setLightbox] = useState<GalleryImage | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    fetchGallery().then(setAll).catch(console.error);
     setIsLoaded(true);
   }, []);
 

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { getAchievements, type Achievement } from '../data/adminStore';
+import { useState, useEffect } from 'react';
+import { type Achievement } from '../data/adminStore';
 import { Reveal, useScrollReveal } from '../components/Reveal';
+import { fetchAchievements } from '../services/achievementService';
 
 // ── Category Config ───────────────────────────────────────────────────────────
 const CATS = [
@@ -252,8 +253,13 @@ const AchievementCard = ({ a, delay }: { a: Achievement; delay: number }) => {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const Achievements = () => {
-  const all = getAchievements();
+  const [all, setAll] = useState<Achievement[]>([]);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    fetchAchievements().then(setAll).catch(console.error);
+  }, []);
+
   const filtered = filter === 'all' ? all : all.filter(a => a.category === filter);
 
   return (

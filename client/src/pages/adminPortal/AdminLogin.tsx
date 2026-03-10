@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { adminLogin } from '../../services/authService';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -8,19 +9,20 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      if (username === 'admin' && password === 'admin@ARG2025') {
-        sessionStorage.setItem('adminSession', JSON.stringify({ username: 'admin', role: 'Administrator' }));
-        navigate('/admin');
-      } else {
-        setError('Invalid credentials. Please try again.');
-      }
+    try {
+      const session = await adminLogin(username, password);
+      sessionStorage.setItem('adminToken', session.token);
+      sessionStorage.setItem('adminSession', JSON.stringify({ username: session.username, role: session.role }));
+      navigate('/admin');
+    } catch {
+      setError('Invalid credentials. Please try again.');
+    } finally {
       setLoading(false);
-    }, 700);
+    }
   };
 
   return (
