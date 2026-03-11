@@ -7,7 +7,7 @@
  * RENDER: Set VITE_API_URL=https://your-server.onrender.com/api in Render env vars
  */
 
-const BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5000/api';
+const BASE = (import.meta.env.VITE_API_URL as string) || 'https://argtest.onrender.com';
 
 /** Helper: get auth token from sessionStorage */
 const getToken = (): string | null =>
