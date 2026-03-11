@@ -18,13 +18,13 @@ services:
       - key: PORT
         value: 5000
       - key: MONGO_URI
-        sync: false          # Fill in Render dashboard: your MongoDB Atlas URI
+        value: mongodb+srv://arg:arg-20@cluster0.7mc2uwl.mongodb.net/?appName=Cluster0
       - key: JWT_SECRET
-        generateValue: true  # Render auto-generates a secure random string
+        generateValue: true
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
-        sync: false          # Set securely in Render dashboard
+        value: admin@ARG2025
 
   # ── Frontend (React / Vite) ───────────────────────────────────────────────────
   - type: web
@@ -35,7 +35,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://arg-academy-server.onrender.com/api
+        value: https://argtest.onrender.com/api
     routes:
       - type: rewrite
         source: /*
