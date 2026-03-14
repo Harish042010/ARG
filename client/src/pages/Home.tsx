@@ -3,6 +3,7 @@ import HeroSection from '../components/HeroSection';
 import FounderSection from '../components/home/FounderSection';
 import VisionMission from '../components/home/VisionMission';
 import HistoryTimeline from '../components/home/HistoryTimeline';
+import PopupBanner from '../components/PoppopBanner';
 
 // Reusable scroll observer for inline sections
 const useInlineSectionAnimation = () => {
@@ -48,6 +49,69 @@ const StatsBanner = () => {
               <p className="text-blue-300 text-xs mt-1 font-medium">{stat.label}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Location Section
+const LocationSection = () => {
+  const ref = useInlineSectionAnimation();
+  return (
+    <section ref={ref} className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10 scroll-hidden">
+          <p className="text-blue-600 text-xs font-bold uppercase tracking-[0.25em] mb-2">Find Us</p>
+          <h2 className="text-3xl md:text-4xl font-black text-blue-950">Campus Location</h2>
+          <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
+            Visit us at ARG Academy Matriculation Higher Secondary School
+          </p>
+        </div>
+
+        <div className="scroll-hidden grid grid-cols-1 md:grid-cols-3 gap-0 rounded-3xl overflow-hidden shadow-2xl border border-blue-100">
+          {/* Info Panel */}
+          <div className="bg-blue-950 text-white p-8 flex flex-col justify-center gap-6">
+            <div>
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Address</p>
+              <p className="text-sm text-blue-200 leading-relaxed">
+                ARG Academy Matriculation<br />Higher Secondary School,<br />Tamil Nadu, India
+              </p>
+            </div>
+            <div>
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Phone</p>
+              <a href="tel:9361520505" className="text-sm text-blue-200 hover:text-white transition-colors">
+                📞 93615 20505
+              </a>
+            </div>
+            <div>
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Hours</p>
+              <p className="text-sm text-blue-200">Mon – Sat: 8:00 AM – 4:00 PM</p>
+            </div>
+            <a
+              href="https://maps.google.com/?q=ARG+ACADEMY+MATRICULATION+HIGHER+SECONDARY+SCHOOL"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block bg-yellow-400 text-blue-950 text-xs font-bold px-5 py-2.5 rounded-full hover:bg-yellow-300 transition-all text-center"
+            >
+              Get Directions →
+            </a>
+          </div>
+
+          {/* Map */}
+          <div className="md:col-span-2">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3911.3349593516946!2d79.71033777489178!3d11.383199888804853!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a54c2f3f153fadb%3A0xf4cd4ef4af574184!2sARG%20ACADEMY%20MATRICULATION%20HIGHER%20SECONDARY%20SCHOOL!5e0!3m2!1sen!2sin!4v1773468080817!5m2!1sen!2sin"
+              width="100%"
+              height="450"
+              style={{ border: 0 }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="ARG Academy Location"
+              className="hover:grayscale-0 transition-all duration-500"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -135,11 +199,13 @@ const CTASection = () => {
 const Home = () => {
   return (
     <>
+    <PopupBanner />
       <HeroSection />
       <StatsBanner />
       <FounderSection />
       <VisionMission />
       <HistoryTimeline />
+      <LocationSection />
       <ExtracurricularsStrip />
       <CTASection />
     </>

@@ -31,6 +31,7 @@ const AdminLayout = () => {
     { to: '/admin/gallery',      label: 'Gallery',       icon: '🖼️', end: false, badge: 0 },
     { to: '/admin/marks', label: 'Exam Marks', icon: '📝', end: false, badge: 0 },
     { to: '/admin/fees', label: 'Fee Records', icon: '💰', end: false, badge: 0 },
+    { to: '/admin/popup-banner', label: 'Popup Banner', icon: '📢', end: false, badge: 0 },
   ];
 
   return (

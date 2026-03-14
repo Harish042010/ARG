@@ -20,6 +20,7 @@ const AdminDashboard = () => {
     { to: '/admin/gallery', icon: '🖼️', title: 'Gallery', desc: 'Upload and manage event photos and campus images', color: 'hover:border-blue-400' },
     { to: '/admin/marks', icon: '📝', title: 'Exam Marks', desc: 'Manage student marks by exam and subject', color: 'hover:border-green-400' },
     { to: '/admin/fees', icon: '💰', title: 'Fee Records', desc: 'Update and track student fee payment status', color: 'hover:border-purple-400' },
+    { to: '/admin/popup-banner', icon: '📢', title: 'Popup Banner', desc: 'Upload and manage popup banner', color: 'hover:border-purple-400' },
   ];
 
   return (

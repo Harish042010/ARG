@@ -361,7 +361,7 @@ const Admissions = () => {
               <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-2xl p-5 text-white">
                 <p className="font-black text-base mb-2 flex items-center gap-2">🎓 Fee Concessions</p>
                 <ul className="text-blue-200 text-sm space-y-1.5">
-                  {['Up to 50% for rank holders', 'Up to 100% for state / national sports achievers', 'Special consideration for economically weaker sections'].map(l => (
+                  {['Up to 100% for rank holders', 'Up to 100% for state / national sports achievers', 'Special consideration for economically weaker sections'].map(l => (
                     <li key={l} className="flex items-start gap-2">
                       <span className="text-emerald-400 font-bold mt-0.5 shrink-0">✓</span>
                       <span>{l}</span>

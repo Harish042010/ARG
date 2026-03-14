@@ -18,6 +18,7 @@ import AdminMarks from '../pages/adminPortal/AdminMarks';
 import AdminFees from '../pages/adminPortal/AdminFees';
 import AdminApplications from '../pages/adminPortal/AdminApplications';
 import AdminLeadership from '../pages/adminPortal/AdminLeadership';
+import BannerAdmin from '../pages/adminPortal/BannerAdmin';
 
 const AppRoutes = () => {
   return (
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="fees" element={<AdminFees />} />
         <Route path="applications" element={<AdminApplications />} />
         <Route path="leadership" element={<AdminLeadership />} />
+        <Route path="popup-banner" element={<BannerAdmin />} />
       </Route>
     </Routes>
   );
